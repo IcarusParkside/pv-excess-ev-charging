@@ -1,0 +1,262 @@
+# packages/pv_ev_charger_daylight.yaml
+# Home Assistant package for solar-powered EV charging with stepped current control,
+# time-based hysteresis, and daylight-only charging restriction.
+#
+# Charging is only allowed during daylight hours, ensuring grid-independent operation.
+# - step up after 3 minutes
+# - step down after 2 minutes
+# - only charge when sun elevation > 0 degrees (or between sunrise/sunset)
+
+input_number:
+  pv_step_1_threshold_watts:
+    name: PV Step 1 Threshold
+    min: 0
+    max: 2000
+    step: 50
+    initial: 1000
+    unit_of_measurement: W
+    mode: box
+
+  pv_step_2_threshold_watts:
+    name: PV Step 2 Threshold
+    min: 500
+    max: 2500
+    step: 50
+    initial: 1500
+    unit_of_measurement: W
+    mode: box
+
+  pv_step_3_threshold_watts:
+    name: PV Step 3 Threshold
+    min: 1000
+    max: 3500
+    step: 50
+    initial: 2500
+    unit_of_measurement: W
+    mode: box
+
+  pv_step_4_threshold_watts:
+    name: PV Step 4 Threshold
+    min: 1500
+    max: 5000
+    step: 50
+    initial: 3000
+    unit_of_measurement: W
+    mode: box
+
+  pv_step_1_current_amps:
+    name: PV Step 1 Current
+    min: 0
+    max: 32
+    step: 1
+    initial: 6
+    unit_of_measurement: A
+    mode: box
+
+  pv_step_2_current_amps:
+    name: PV Step 2 Current
+    min: 0
+    max: 32
+    step: 1
+    initial: 8
+    unit_of_measurement: A
+    mode: box
+
+  pv_step_3_current_amps:
+    name: PV Step 3 Current
+    min: 0
+    max: 32
+    step: 1
+    initial: 10
+    unit_of_measurement: A
+    mode: box
+
+  pv_step_4_current_amps:
+    name: PV Step 4 Current
+    min: 0
+    max: 32
+    step: 1
+    initial: 15
+    unit_of_measurement: A
+    mode: box
+
+  pv_step_up_delay_minutes:
+    name: Step Up Delay
+    min: 1
+    max: 30
+    step: 1
+    initial: 3
+    unit_of_measurement: min
+    mode: box
+
+  pv_step_down_delay_minutes:
+    name: Step Down Delay
+    min: 1
+    max: 30
+    step: 1
+    initial: 2
+    unit_of_measurement: min
+    mode: box
+
+  pv_daylight_min_elevation:
+    name: Minimum Sun Elevation for Charging
+    min: -10
+    max: 30
+    step: 1
+    initial: 0
+    unit_of_measurement: degrees
+    mode: box
+    icon: mdi:sun
+
+input_datetime:
+  pv_last_step_change:
+    name: PV Last Step Change
+    has_date: true
+    has_time: true
+
+input_text:
+  pv_current_step:
+    name: PV Current Step
+    initial: "0"
+    max: 10
+
+template:
+  - binary_sensor:
+      - name: PV Charging Allowed
+        unique_id: pv_charging_allowed
+        state: >
+          {{ states('sensor.pv_power_watts') | float(0) >= states('input_number.pv_step_1_threshold_watts') | float(0) }}
+        availability: >
+          {{ states('sensor.pv_power_watts') not in ['unknown', 'unavailable', 'none'] }}
+
+      - name: PV Daylight Active
+        unique_id: pv_daylight_active
+        description: Binary sensor indicating if sun is above minimum elevation threshold
+        state: >
+          {{ (state_attr('sun.sun', 'elevation') | float(0)) >= (states('input_number.pv_daylight_min_elevation') | float(0)) }}
+        availability: >
+          {{ state_attr('sun.sun', 'elevation') is not none }}
+
+automation:
+  - alias: PV EV Charger - Control Current by Solar (Daylight Only)
+    id: pv_ev_charger_control_daylight
+    description: Increase/decrease EV charging current based on PV output during daylight hours with time-based hysteresis
+    mode: single
+    trigger:
+      - platform: state
+        entity_id:
+          - sensor.pv_power_watts
+          - binary_sensor.ev_connected
+          - sun.sun
+      - platform: state
+        entity_id:
+          - input_number.pv_step_1_threshold_watts
+          - input_number.pv_step_2_threshold_watts
+          - input_number.pv_step_3_threshold_watts
+          - input_number.pv_step_4_threshold_watts
+          - input_number.pv_step_1_current_amps
+          - input_number.pv_step_2_current_amps
+          - input_number.pv_step_3_current_amps
+          - input_number.pv_step_4_current_amps
+          - input_number.pv_step_up_delay_minutes
+          - input_number.pv_step_down_delay_minutes
+          - input_number.pv_daylight_min_elevation
+    condition:
+      - condition: state
+        entity_id: binary_sensor.ev_connected
+        state: "on"
+      - condition: state
+        entity_id: binary_sensor.pv_daylight_active
+        state: "on"
+    action:
+      - variables:
+          pv_power: "{{ states('sensor.pv_power_watts') | float(0) }}"
+          current_amps: "{{ states('number.ev_charger_current_amps') | float(0) }}"
+          step_1_threshold: "{{ states('input_number.pv_step_1_threshold_watts') | float(0) }}"
+          step_2_threshold: "{{ states('input_number.pv_step_2_threshold_watts') | float(0) }}"
+          step_3_threshold: "{{ states('input_number.pv_step_3_threshold_watts') | float(0) }}"
+          step_4_threshold: "{{ states('input_number.pv_step_4_threshold_watts') | float(0) }}"
+          step_1_current: "{{ states('input_number.pv_step_1_current_amps') | float(0) }}"
+          step_2_current: "{{ states('input_number.pv_step_2_current_amps') | float(0) }}"
+          step_3_current: "{{ states('input_number.pv_step_3_current_amps') | float(0) }}"
+          step_4_current: "{{ states('input_number.pv_step_4_current_amps') | float(0) }}"
+          step_up_delay: "{{ states('input_number.pv_step_up_delay_minutes') | float(0) }}"
+          step_down_delay: "{{ states('input_number.pv_step_down_delay_minutes') | float(0) }}"
+          last_change_epoch: >
+            {% set raw = states('input_datetime.pv_last_step_change') %}
+            {{ as_timestamp(raw) if raw not in ['unknown', 'unavailable', 'none', ''] else 0 }}
+          elapsed_minutes: >
+            {{ ((as_timestamp(now()) - last_change_epoch) / 60) | float(0) }}
+          target_current: >
+            {% if pv_power >= step_4_threshold %}
+              {{ step_4_current }}
+            {% elif pv_power >= step_3_threshold %}
+              {{ step_3_current }}
+            {% elif pv_power >= step_2_threshold %}
+              {{ step_2_current }}
+            {% elif pv_power >= step_1_threshold %}
+              {{ step_1_current }}
+            {% else %}
+              0
+            {% endif %}
+          target_step: >
+            {% if pv_power >= step_4_threshold %}
+              4
+            {% elif pv_power >= step_3_threshold %}
+              3
+            {% elif pv_power >= step_2_threshold %}
+              2
+            {% elif pv_power >= step_1_threshold %}
+              1
+            {% else %}
+              0
+            {% endif %}
+          is_stepping_up: "{{ (target_current | float(0)) > (current_amps | float(0)) }}"
+          is_stepping_down: "{{ (target_current | float(0)) < (current_amps | float(0)) }}"
+          can_step_up: "{{ is_stepping_up and elapsed_minutes >= step_up_delay }}"
+          can_step_down: "{{ is_stepping_down and elapsed_minutes >= step_down_delay }}"
+      - choose:
+          - conditions: >
+              {{ (target_current | float(0)) != (current_amps | float(0)) and (can_step_up or can_step_down) }}
+            sequence:
+              - service: number.set_value
+                target:
+                  entity_id: number.ev_charger_current_amps
+                data:
+                  value: "{{ target_current }}"
+              - service: input_datetime.set_datetime
+                target:
+                  entity_id: input_datetime.pv_last_step_change
+                data:
+                  datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+              - service: input_text.set_value
+                target:
+                  entity_id: input_text.pv_current_step
+                data:
+                  value: "{{ target_step }}"
+        default: []
+
+  - alias: PV EV Charger - Force Stop at Sunset
+    id: pv_ev_charger_force_stop_sunset
+    description: Force charging to 0 amps when sun goes below minimum elevation
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.pv_daylight_active
+        to: "off"
+    action:
+      - service: number.set_value
+        target:
+          entity_id: number.ev_charger_current_amps
+        data:
+          value: 0
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.pv_last_step_change
+        data:
+          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.pv_current_step
+        data:
+          value: "0"
