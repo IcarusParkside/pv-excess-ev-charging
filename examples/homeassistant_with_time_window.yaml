@@ -1,6 +1,6 @@
 # Home Assistant Time Window Configuration Example
 
-This file provides a complete configuration example for the PV EV Charger system with a restricted charging window of 10:05 to 15:55, updated step thresholds, and an optional safety override.
+This file provides a complete configuration example for the PV EV Charger system with a restricted charging window of 10:05 to 15:55, updated step thresholds, a safety override, and a standby step at the end of the window.
 
 ## Required helper configuration
 
@@ -82,7 +82,7 @@ template:
           {% endif %}
 ```
 
-## Main automation with time window support, new thresholds, and safety override
+## Main automation with time window support, new thresholds, safety override, and standby at window end
 
 ```yaml
 automation:
@@ -175,6 +175,25 @@ automation:
               entity_id: input_text.pv_current_step
             data:
               value: "{{ target_step }}"
+
+  - alias: "PV Charge Controller - Standby at Window End"
+    id: pv_ev_charger_standby_at_window_end
+    description: "Set charger to 0 A at the end of the configured charging window"
+    mode: single
+    trigger:
+      - trigger: state
+        entity_id: binary_sensor.pv_charge_window_active
+        to: "off"
+    condition:
+      - condition: state
+        entity_id: input_boolean.pv_charge_safety_override
+        state: "off"
+    action:
+      - service: number.set_value
+        target:
+          entity_id: number.ev_charger_current_amps
+        data:
+          value: 0
 ```
 
 ## Example dashboard card
@@ -209,6 +228,8 @@ This package is configured for:
 
 The charger will only operate when the current time is within this range and solar production meets the configured thresholds. If `input_boolean.pv_charge_safety_override` is switched on, the PV automation will simply stay idle and allow other scripts or manual control to work unimpeded.
 
+At the moment the charging window closes, the `Standby at Window End` automation sets the charger current to 0 A so the EV goes into standby without interfering with any external schedule afterward.
+
 ---
 
-This configuration gives you a practical time-windowed PV charging setup for Home Assistant with the updated threshold mapping and a non-invasive safety override.
+This configuration gives you a practical time-windowed PV charging setup for Home Assistant with the updated threshold mapping, a non-invasive safety override, and a final standby step at the end of the active window.

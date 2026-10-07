@@ -137,6 +137,34 @@ condition:
 
 This means the automation will only run inside the window, and will not force a value outside the window. If the safety override is switched on, the PV automation becomes inactive without affecting other schedules or manual control.
 
+## End-of-window standby behavior
+
+At the end of the configured charging window, the system can set the charger to 0 A so it drops into standby before other schedules or manual commands take over.
+
+```yaml
+automation:
+  - alias: "PV Charge Controller - Standby at Window End"
+    id: pv_ev_charger_standby_at_window_end
+    description: "Set charger to 0 A at the end of the configured charging window"
+    mode: single
+    trigger:
+      - trigger: state
+        entity_id: binary_sensor.pv_charge_window_active
+        to: "off"
+    condition:
+      - condition: state
+        entity_id: input_boolean.pv_charge_safety_override
+        state: "off"
+    action:
+      - service: number.set_value
+        target:
+          entity_id: number.ev_charger_current_amps
+        data:
+          value: 0
+```
+
+This ensures the charger goes into standby as soon as the time window closes, without interfering with other schedules outside that window.
+
 ## Example Home Assistant automation
 
 This automation implements time-based hysteresis and respects the configured charging window and safety override. It evaluates whether a step change should occur based on:
@@ -283,9 +311,10 @@ entities:
 4. Create the charging window helpers with start = 10:05 and end = 15:55
 5. Create the safety override helper
 6. Deploy the automation with the time-based hysteresis logic
-7. Test over a few sunny days to observe step change behavior
-8. Adjust `min_time_up` and `min_time_down` if needed
-9. Add the dashboard card for easy monitoring and debugging
+7. Add the standby-at-window-end automation
+8. Test over a few sunny days to observe step change behavior
+9. Adjust `min_time_up` and `min_time_down` if needed
+10. Add the dashboard card for easy monitoring and debugging
 
 ## Notes
 
@@ -296,7 +325,8 @@ entities:
 - The optional time window restricts charging to 10:05–15:55 by default
 - The automation does not force the charger to 0 A outside the window, so other scripts/schedules can still operate
 - Turning on `input_boolean.pv_charge_safety_override` disables the PV automation entirely without affecting other schedules or manual control
+- At the end of the active window, a dedicated automation sets the charger to 0 A so it goes into standby
 
 ---
 
-This repository provides a practical, stepped approach to solar-aware EV charging in Home Assistant using fixed power thresholds with intelligent time-based hysteresis, optional time-window control, and a manual safety override.
+This repository provides a practical, stepped approach to solar-aware EV charging in Home Assistant using fixed power thresholds with intelligent time-based hysteresis, optional time-window control, a safety override, and an explicit standby step at the end of the allowed charging window.
