@@ -1,12 +1,18 @@
 # Home Assistant Time Window Configuration Example
 
-This file provides a complete configuration example for the PV EV Charger system with a restricted charging window of 10:05 to 15:55 and updated step thresholds.
+This file provides a complete configuration example for the PV EV Charger system with a restricted charging window of 10:05 to 15:55, updated step thresholds, and an optional safety override.
 
 ## Required helper configuration
 
 Add this to your `configuration.yaml`:
 
 ```yaml
+input_boolean:
+  pv_charge_safety_override:
+    name: "PV Charge Safety Override"
+    initial: false
+    icon: mdi:shield-check
+
 input_datetime:
   pv_last_step_change:
     name: "PV Last Step Change"
@@ -76,7 +82,7 @@ template:
           {% endif %}
 ```
 
-## Main automation with time window support and new thresholds
+## Main automation with time window support, new thresholds, and safety override
 
 ```yaml
 automation:
@@ -93,6 +99,8 @@ automation:
         entity_id: input_datetime.pv_charge_window_start
       - trigger: state
         entity_id: input_datetime.pv_charge_window_end
+      - trigger: state
+        entity_id: input_boolean.pv_charge_safety_override
     condition:
       - condition: state
         entity_id: binary_sensor.ev_connected
@@ -100,6 +108,9 @@ automation:
       - condition: state
         entity_id: binary_sensor.pv_charge_window_active
         state: "on"
+      - condition: state
+        entity_id: input_boolean.pv_charge_safety_override
+        state: "off"
     action:
       - variables:
           pv_power: "{{ states('sensor.pv_power_watts') | float(0) }}"
@@ -176,6 +187,8 @@ entities:
     name: EV Connected
   - entity: binary_sensor.pv_charge_window_active
     name: Charging Window Active
+  - entity: input_boolean.pv_charge_safety_override
+    name: Safety Override
   - entity: input_datetime.pv_charge_window_start
     name: Window Start Time
   - entity: input_datetime.pv_charge_window_end
@@ -194,8 +207,8 @@ This package is configured for:
 - Start: 10:05
 - End: 15:55
 
-The charger will only operate when the current time is within this range and solar production meets the configured thresholds.
+The charger will only operate when the current time is within this range and solar production meets the configured thresholds. If `input_boolean.pv_charge_safety_override` is switched on, the PV automation will simply stay idle and allow other scripts or manual control to work unimpeded.
 
 ---
 
-This configuration gives you a practical time-windowed PV charging setup for Home Assistant with the updated threshold mapping.
+This configuration gives you a practical time-windowed PV charging setup for Home Assistant with the updated threshold mapping and a non-invasive safety override.

@@ -65,6 +65,20 @@ input_text:
     initial: "0"
 ```
 
+## Safety override (recommended)
+
+This optional helper lets you disable the PV automation without affecting other schedules or manual charging control.
+
+```yaml
+input_boolean:
+  pv_charge_safety_override:
+    name: "PV Charge Safety Override"
+    initial: false
+    icon: mdi:shield-check
+```
+
+When this switch is turned on, the PV automation will not change the charger current. Other schedules and manual control remain unaffected.
+
 ## Time window restriction (default: 10:05–15:55)
 
 To allow charging only during a specific window, add the following helpers:
@@ -116,17 +130,21 @@ condition:
   - condition: state
     entity_id: binary_sensor.pv_charge_window_active
     state: "on"
+  - condition: state
+    entity_id: input_boolean.pv_charge_safety_override
+    state: "off"
 ```
 
-This means the automation will only run inside the window, and will not force a value outside the window.
+This means the automation will only run inside the window, and will not force a value outside the window. If the safety override is switched on, the PV automation becomes inactive without affecting other schedules or manual control.
 
 ## Example Home Assistant automation
 
-This automation implements time-based hysteresis and respects the configured charging window. It evaluates whether a step change should occur based on:
+This automation implements time-based hysteresis and respects the configured charging window and safety override. It evaluates whether a step change should occur based on:
 1. Current solar power level
 2. Time elapsed since last step change
 3. Direction of change (up = 3 min delay, down = 2 min delay)
 4. Whether the current time is inside the allowed charging window
+5. Whether the safety override switch is off
 
 ```yaml
 automation:
@@ -141,6 +159,9 @@ automation:
       - condition: state
         entity_id: binary_sensor.pv_charge_window_active
         state: "on"
+      - condition: state
+        entity_id: input_boolean.pv_charge_safety_override
+        state: "off"
     action:
       - variables:
           pv_power: "{{ states('sensor.pv_power_watts') | float(0) }}"
@@ -248,6 +269,8 @@ entities:
     name: EV Connected
   - entity: binary_sensor.pv_charge_window_active
     name: Charging Window Active
+  - entity: input_boolean.pv_charge_safety_override
+    name: Safety Override
   - entity: input_datetime.pv_last_step_change
     name: Last Step Change
 ```
@@ -258,10 +281,11 @@ entities:
 2. Confirm your solar power sensor name
 3. Create the input_datetime and input_text helpers
 4. Create the charging window helpers with start = 10:05 and end = 15:55
-5. Deploy the automation with the time-based hysteresis logic
-6. Test over a few sunny days to observe step change behavior
-7. Adjust `min_time_up` and `min_time_down` if needed
-8. Add the dashboard card for easy monitoring and debugging
+5. Create the safety override helper
+6. Deploy the automation with the time-based hysteresis logic
+7. Test over a few sunny days to observe step change behavior
+8. Adjust `min_time_up` and `min_time_down` if needed
+9. Add the dashboard card for easy monitoring and debugging
 
 ## Notes
 
@@ -271,7 +295,8 @@ entities:
 - Stepping up takes 3 minutes; stepping down takes 2 minutes
 - The optional time window restricts charging to 10:05–15:55 by default
 - The automation does not force the charger to 0 A outside the window, so other scripts/schedules can still operate
+- Turning on `input_boolean.pv_charge_safety_override` disables the PV automation entirely without affecting other schedules or manual control
 
 ---
 
-This repository provides a practical, stepped approach to solar-aware EV charging in Home Assistant using fixed power thresholds with intelligent time-based hysteresis and optional time-window control.
+This repository provides a practical, stepped approach to solar-aware EV charging in Home Assistant using fixed power thresholds with intelligent time-based hysteresis, optional time-window control, and a manual safety override.
