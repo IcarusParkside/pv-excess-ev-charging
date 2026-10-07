@@ -1,6 +1,6 @@
 # Home Assistant Time Window Configuration Example
 
-This file provides a complete configuration example for the PV EV Charger system with a restricted charging window of 10:05 to 16:55.
+This file provides a complete configuration example for the PV EV Charger system with a restricted charging window of 10:05 to 15:55.
 
 ## Required helper configuration
 
@@ -36,7 +36,7 @@ input_text:
 
 Set these exact values in the UI or via YAML:
 - Start: 10:05
-- End: 16:55
+- End: 15:55
 
 ## Template sensor for time window validation
 
@@ -202,7 +202,7 @@ entities:
 
 This package is configured for:
 - Start: 10:05
-- End: 16:55
+- End: 15:55
 
 The charger will only operate when the current time is within this range and solar production meets the configured thresholds.
 

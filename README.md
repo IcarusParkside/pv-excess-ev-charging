@@ -64,7 +64,7 @@ input_text:
     initial: "0"
 ```
 
-## Time window restriction (default: 10:05–16:55)
+## Time window restriction (default: 10:05–15:55)
 
 To allow charging only during a specific window, add the following helpers:
 
@@ -83,7 +83,7 @@ input_datetime:
 
 Set the default values in Home Assistant to:
 - PV Charge Window Start: 10:05
-- PV Charge Window End: 16:55
+- PV Charge Window End: 15:55
 
 Then add a template binary sensor:
 
@@ -117,7 +117,7 @@ condition:
     state: "on"
 ```
 
-This means the charger will only operate between 10:05 and 16:55 unless those helper values are changed.
+This means the charger will only operate between 10:05 and 15:55 unless those helper values are changed.
 
 ## Example Home Assistant automation
 
@@ -251,7 +251,7 @@ entities:
 1. Identify your charger's current control entity in Home Assistant
 2. Confirm your solar power sensor name
 3. Create the input_datetime and input_text helpers
-4. Create the charging window helpers with start = 10:05 and end = 16:55
+4. Create the charging window helpers with start = 10:05 and end = 15:55
 5. Deploy the automation with the time-based hysteresis logic
 6. Test over a few sunny days to observe step change behavior
 7. Adjust `min_time_up` and `min_time_down` if needed
@@ -263,7 +263,7 @@ entities:
 - Current is set to 0 A when solar is below 1000 W (disables charging)
 - Time-based hysteresis prevents rapid step changes from cloud cover
 - Stepping up takes 3 minutes; stepping down takes 2 minutes
-- The optional time window restricts charging to 10:05–16:55 by default
+- The optional time window restricts charging to 10:05–15:55 by default
 
 ---
 
