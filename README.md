@@ -137,15 +137,17 @@ condition:
 
 This means the automation will only run inside the window, and will not force a value outside the window. If the safety override is switched on, the PV automation becomes inactive without affecting other schedules or manual control.
 
-## End-of-window standby behavior
+## End-of-window stop behavior
 
-At the end of the configured charging window, the system can set the charger to 0 A so it drops into standby before other schedules or manual commands take over.
+At the end of the configured charging window, the system should stop the charger using the charger's dedicated stop command when available. For many chargers that is a `switch`, `button`, or custom service call that fully stops charging.
+
+Use a generic placeholder like this and replace it with the actual entity or service used by your charger integration:
 
 ```yaml
 automation:
-  - alias: "PV Charge Controller - Standby at Window End"
-    id: pv_ev_charger_standby_at_window_end
-    description: "Set charger to 0 A at the end of the configured charging window"
+  - alias: "PV Charge Controller - Stop charger at window end"
+    id: pv_ev_charger_stop_at_window_end
+    description: "Stop EV charging at the end of the configured charging window"
     mode: single
     trigger:
       - trigger: state
@@ -156,14 +158,14 @@ automation:
         entity_id: input_boolean.pv_charge_safety_override
         state: "off"
     action:
-      - service: number.set_value
+      # Replace this with your charger-specific stop command.
+      # Examples include: switch.turn_off, button.press, or a custom service.
+      - service: switch.turn_off
         target:
-          entity_id: number.ev_charger_current_amps
-        data:
-          value: 0
+          entity_id: switch.ev_charger_stop_charging
 ```
 
-This ensures the charger goes into standby as soon as the time window closes, without interfering with other schedules outside that window.
+Important: The actual stop entity/service varies by charger model. If your charger exposes a stop button or service, use that instead of the placeholder above. If it only exposes charge current control, fall back to setting current to 0 A instead.
 
 ## Example Home Assistant automation
 
@@ -311,7 +313,7 @@ entities:
 4. Create the charging window helpers with start = 10:05 and end = 15:55
 5. Create the safety override helper
 6. Deploy the automation with the time-based hysteresis logic
-7. Add the standby-at-window-end automation
+7. Add the stop-at-window-end automation using the charger-specific stop command
 8. Test over a few sunny days to observe step change behavior
 9. Adjust `min_time_up` and `min_time_down` if needed
 10. Add the dashboard card for easy monitoring and debugging
@@ -325,8 +327,8 @@ entities:
 - The optional time window restricts charging to 10:05–15:55 by default
 - The automation does not force the charger to 0 A outside the window, so other scripts/schedules can still operate
 - Turning on `input_boolean.pv_charge_safety_override` disables the PV automation entirely without affecting other schedules or manual control
-- At the end of the active window, a dedicated automation sets the charger to 0 A so it goes into standby
+- At the end of the active window, use the charger-specific stop command if your charger supports it; otherwise set current to 0 A as a fallback
 
 ---
 
-This repository provides a practical, stepped approach to solar-aware EV charging in Home Assistant using fixed power thresholds with intelligent time-based hysteresis, optional time-window control, a safety override, and an explicit standby step at the end of the allowed charging window.
+This repository provides a practical, stepped approach to solar-aware EV charging in Home Assistant using fixed power thresholds with intelligent time-based hysteresis, optional time-window control, a safety override, and a charger-specific stop command at the end of the allowed charging window.
