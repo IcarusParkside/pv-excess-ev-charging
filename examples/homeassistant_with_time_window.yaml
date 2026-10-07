@@ -1,6 +1,6 @@
 # Home Assistant Time Window Configuration Example
 
-This file provides a complete configuration example for the PV EV Charger system with a restricted charging window of 10:05 to 15:55.
+This file provides a complete configuration example for the PV EV Charger system with a restricted charging window of 10:05 to 15:55 and updated step thresholds.
 
 ## Required helper configuration
 
@@ -38,6 +38,17 @@ Set these exact values in the UI or via YAML:
 - Start: 10:05
 - End: 15:55
 
+## Updated PV charge mapping
+
+```text
+0–1499 W   -> 0 A
+1500–1999 W -> 6 A
+2000–2499 W -> 8 A
+2500–2999 W -> 10 A
+3000–3499 W -> 13 A
+3500+ W     -> 15 A
+```
+
 ## Template sensor for time window validation
 
 ```yaml
@@ -65,7 +76,7 @@ template:
           {% endif %}
 ```
 
-## Main automation with time window support
+## Main automation with time window support and new thresholds
 
 ```yaml
 automation:
@@ -97,26 +108,30 @@ automation:
           time_since_change: "{{ (now().timestamp() - last_change) / 60 }}"
 
           target_step: >
-            {%- if pv_power >= 3000 -%}
+            {%- if pv_power >= 3500 -%}
+              6
+            {%- elif pv_power >= 3000 -%}
               5
             {%- elif pv_power >= 2500 -%}
               4
-            {%- elif pv_power >= 1500 -%}
+            {%- elif pv_power >= 2000 -%}
               3
-            {%- elif pv_power >= 1000 -%}
+            {%- elif pv_power >= 1500 -%}
               2
             {%- else -%}
               1
             {%- endif %}
 
           target_amps: >
-            {%- if pv_power >= 3000 -%}
+            {%- if pv_power >= 3500 -%}
               15
+            {%- elif pv_power >= 3000 -%}
+              13
             {%- elif pv_power >= 2500 -%}
               10
-            {%- elif pv_power >= 1500 -%}
+            {%- elif pv_power >= 2000 -%}
               8
-            {%- elif pv_power >= 1000 -%}
+            {%- elif pv_power >= 1500 -%}
               6
             {%- else -%}
               0
@@ -208,4 +223,4 @@ The charger will only operate when the current time is within this range and sol
 
 ---
 
-This configuration gives you a practical time-windowed PV charging setup for Home Assistant.
+This configuration gives you a practical time-windowed PV charging setup for Home Assistant with the updated threshold mapping.

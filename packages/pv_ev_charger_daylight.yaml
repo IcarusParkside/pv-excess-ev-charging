@@ -13,7 +13,7 @@ input_number:
     min: 0
     max: 2000
     step: 50
-    initial: 1000
+    initial: 1500
     unit_of_measurement: W
     mode: box
 
@@ -22,7 +22,7 @@ input_number:
     min: 500
     max: 2500
     step: 50
-    initial: 1500
+    initial: 2000
     unit_of_measurement: W
     mode: box
 
@@ -41,6 +41,15 @@ input_number:
     max: 5000
     step: 50
     initial: 3000
+    unit_of_measurement: W
+    mode: box
+
+  pv_step_5_threshold_watts:
+    name: PV Step 5 Threshold
+    min: 2000
+    max: 6000
+    step: 50
+    initial: 3500
     unit_of_measurement: W
     mode: box
 
@@ -73,6 +82,15 @@ input_number:
 
   pv_step_4_current_amps:
     name: PV Step 4 Current
+    min: 0
+    max: 32
+    step: 1
+    initial: 13
+    unit_of_measurement: A
+    mode: box
+
+  pv_step_5_current_amps:
+    name: PV Step 5 Current
     min: 0
     max: 32
     step: 1
@@ -154,10 +172,12 @@ automation:
           - input_number.pv_step_2_threshold_watts
           - input_number.pv_step_3_threshold_watts
           - input_number.pv_step_4_threshold_watts
+          - input_number.pv_step_5_threshold_watts
           - input_number.pv_step_1_current_amps
           - input_number.pv_step_2_current_amps
           - input_number.pv_step_3_current_amps
           - input_number.pv_step_4_current_amps
+          - input_number.pv_step_5_current_amps
           - input_number.pv_step_up_delay_minutes
           - input_number.pv_step_down_delay_minutes
           - input_number.pv_daylight_min_elevation
@@ -176,10 +196,12 @@ automation:
           step_2_threshold: "{{ states('input_number.pv_step_2_threshold_watts') | float(0) }}"
           step_3_threshold: "{{ states('input_number.pv_step_3_threshold_watts') | float(0) }}"
           step_4_threshold: "{{ states('input_number.pv_step_4_threshold_watts') | float(0) }}"
+          step_5_threshold: "{{ states('input_number.pv_step_5_threshold_watts') | float(0) }}"
           step_1_current: "{{ states('input_number.pv_step_1_current_amps') | float(0) }}"
           step_2_current: "{{ states('input_number.pv_step_2_current_amps') | float(0) }}"
           step_3_current: "{{ states('input_number.pv_step_3_current_amps') | float(0) }}"
           step_4_current: "{{ states('input_number.pv_step_4_current_amps') | float(0) }}"
+          step_5_current: "{{ states('input_number.pv_step_5_current_amps') | float(0) }}"
           step_up_delay: "{{ states('input_number.pv_step_up_delay_minutes') | float(0) }}"
           step_down_delay: "{{ states('input_number.pv_step_down_delay_minutes') | float(0) }}"
           last_change_epoch: >
@@ -188,7 +210,9 @@ automation:
           elapsed_minutes: >
             {{ ((as_timestamp(now()) - last_change_epoch) / 60) | float(0) }}
           target_current: >
-            {% if pv_power >= step_4_threshold %}
+            {% if pv_power >= step_5_threshold %}
+              {{ step_5_current }}
+            {% elif pv_power >= step_4_threshold %}
               {{ step_4_current }}
             {% elif pv_power >= step_3_threshold %}
               {{ step_3_current }}
@@ -200,7 +224,9 @@ automation:
               0
             {% endif %}
           target_step: >
-            {% if pv_power >= step_4_threshold %}
+            {% if pv_power >= step_5_threshold %}
+              5
+            {% elif pv_power >= step_4_threshold %}
               4
             {% elif pv_power >= step_3_threshold %}
               3
@@ -260,3 +286,312 @@ automation:
           entity_id: input_text.pv_current_step
         data:
           value: "0"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

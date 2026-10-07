@@ -20,11 +20,12 @@ Instead of toggling the charger on and off at fixed thresholds, this system maps
 
 This system uses these fixed stepped levels with time-based hysteresis:
 
-- 0–1000 W solar → 0 A (no charging)
-- 1000–1500 W solar → 6 A (minimum charge)
-- 1500–2500 W solar → 8 A
-- 2500–3000 W solar → 10 A
-- 3000+ W solar → 15 A (maximum)
+- 0–1499 W solar → 0 A (no charging)
+- 1500–1999 W solar → 6 A
+- 2000–2499 W solar → 8 A
+- 2500–2999 W solar → 10 A
+- 3000–3499 W solar → 13 A
+- 3500+ W solar → 15 A (maximum)
 
 Hysteresis is time-based:
 - Upgrade to next step after 3 minutes at higher threshold
@@ -148,26 +149,30 @@ automation:
           time_since_change: "{{ (now().timestamp() - last_change) / 60 }}"
 
           target_step: >
-            {%- if pv_power >= 3000 -%}
+            {%- if pv_power >= 3500 -%}
+              6
+            {%- elif pv_power >= 3000 -%}
               5
             {%- elif pv_power >= 2500 -%}
               4
-            {%- elif pv_power >= 1500 -%}
+            {%- elif pv_power >= 2000 -%}
               3
-            {%- elif pv_power >= 1000 -%}
+            {%- elif pv_power >= 1500 -%}
               2
             {%- else -%}
               1
             {%- endif %}
 
           target_amps: >
-            {%- if pv_power >= 3000 -%}
+            {%- if pv_power >= 3500 -%}
               15
+            {%- elif pv_power >= 3000 -%}
+              13
             {%- elif pv_power >= 2500 -%}
               10
-            {%- elif pv_power >= 1500 -%}
+            {%- elif pv_power >= 2000 -%}
               8
-            {%- elif pv_power >= 1000 -%}
+            {%- elif pv_power >= 1500 -%}
               6
             {%- else -%}
               0
@@ -220,11 +225,12 @@ Stepping DOWN (decreasing charge current):
 
 | Solar Power Range | Charge Current | Step | Up Delay | Down Delay |
 |-------------------|----------------|------|----------|------------|
-| 0–999 W           | 0 A            | 1    | —        | 2 min      |
-| 1000–1499 W       | 6 A            | 2    | 3 min    | 2 min      |
-| 1500–2499 W       | 8 A            | 3    | 3 min    | 2 min      |
+| 0–1499 W          | 0 A            | 1    | —        | 2 min      |
+| 1500–1999 W       | 6 A            | 2    | 3 min    | 2 min      |
+| 2000–2499 W       | 8 A            | 3    | 3 min    | 2 min      |
 | 2500–2999 W       | 10 A           | 4    | 3 min    | 2 min      |
-| 3000+ W           | 15 A           | 5    | 3 min    | —          |
+| 3000–3499 W       | 13 A           | 5    | 3 min    | 2 min      |
+| 3500+ W           | 15 A           | 6    | 3 min    | —          |
 
 ## Dashboard integration
 
@@ -260,7 +266,7 @@ entities:
 ## Notes
 
 - Charging only occurs when `binary_sensor.ev_connected` is `on`
-- Current is set to 0 A when solar is below 1000 W (disables charging)
+- Current is set to 0 A when solar is below 1500 W (disables charging)
 - Time-based hysteresis prevents rapid step changes from cloud cover
 - Stepping up takes 3 minutes; stepping down takes 2 minutes
 - The optional time window restricts charging to 10:05–15:55 by default
