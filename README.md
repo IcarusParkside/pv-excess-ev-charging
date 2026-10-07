@@ -118,7 +118,7 @@ condition:
     state: "on"
 ```
 
-This means the charger will only operate between 10:05 and 15:55 unless those helper values are changed.
+This means the automation will only run inside the window, and will not force a value outside the window.
 
 ## Example Home Assistant automation
 
@@ -270,6 +270,7 @@ entities:
 - Time-based hysteresis prevents rapid step changes from cloud cover
 - Stepping up takes 3 minutes; stepping down takes 2 minutes
 - The optional time window restricts charging to 10:05–15:55 by default
+- The automation does not force the charger to 0 A outside the window, so other scripts/schedules can still operate
 
 ---
 

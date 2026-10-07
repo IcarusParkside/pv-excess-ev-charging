@@ -164,31 +164,6 @@ automation:
               entity_id: input_text.pv_current_step
             data:
               value: "{{ target_step }}"
-
-  - alias: "PV Charge Controller - Force Stop Outside Window"
-    id: pv_ev_charger_stop_outside_window
-    description: "Set charging to 0 amps when outside the allowed time window"
-    mode: single
-    trigger:
-      - trigger: state
-        entity_id: binary_sensor.pv_charge_window_active
-        to: "off"
-    action:
-      - service: number.set_value
-        target:
-          entity_id: number.ev_charger_current_amps
-        data:
-          value: 0
-      - service: input_datetime.set_datetime
-        target:
-          entity_id: input_datetime.pv_last_step_change
-        data:
-          datetime: "{{ now().isoformat() }}"
-      - service: input_text.set_value
-        target:
-          entity_id: input_text.pv_current_step
-        data:
-          value: "0"
 ```
 
 ## Example dashboard card
