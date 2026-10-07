@@ -1,0 +1,211 @@
+# Home Assistant Time Window Configuration Example
+
+This file provides a complete configuration example for the PV EV Charger system with a restricted charging window of 10:05 to 16:55.
+
+## Required helper configuration
+
+Add this to your `configuration.yaml`:
+
+```yaml
+input_datetime:
+  pv_last_step_change:
+    name: "PV Last Step Change"
+    has_date: true
+    has_time: true
+    icon: mdi:history
+
+  pv_charge_window_start:
+    name: "PV Charge Window Start"
+    has_date: false
+    has_time: true
+    icon: mdi:clock-start
+
+  pv_charge_window_end:
+    name: "PV Charge Window End"
+    has_date: false
+    has_time: true
+    icon: mdi:clock-end
+
+input_text:
+  pv_current_step:
+    name: "Current PV Step"
+    max: 10
+    initial: "0"
+    icon: mdi:numeric
+```
+
+Set these exact values in the UI or via YAML:
+- Start: 10:05
+- End: 16:55
+
+## Template sensor for time window validation
+
+```yaml
+template:
+  - binary_sensor:
+      - name: PV Charge Window Active
+        unique_id: pv_charge_window_active
+        description: "Indicates if current time falls within the charging window"
+        state: >
+          {% set start = states('input_datetime.pv_charge_window_start') %}
+          {% set end = states('input_datetime.pv_charge_window_end') %}
+          {% set now_hm = now().strftime('%H:%M') %}
+          {% if start in ['unknown', 'unavailable', 'none', ''] or end in ['unknown', 'unavailable', 'none', ''] %}
+            {{ false }}
+          {% elif start <= end %}
+            {{ start <= now_hm and now_hm <= end }}
+          {% else %}
+            {{ now_hm >= start or now_hm <= end }}
+          {% endif %}
+        icon: >
+          {% if this.state == 'on' %}
+            mdi:clock-check
+          {% else %}
+            mdi:clock-x
+          {% endif %}
+```
+
+## Main automation with time window support
+
+```yaml
+automation:
+  - alias: "PV Charge Controller - Set charger current by solar output with time window"
+    id: pv_ev_charger_control_with_window
+    description: "Increase/decrease EV charging current based on PV output with time-based hysteresis and time-window restriction"
+    mode: single
+    trigger:
+      - trigger: state
+        entity_id: sensor.pv_power_watts
+      - trigger: state
+        entity_id: binary_sensor.ev_connected
+      - trigger: state
+        entity_id: input_datetime.pv_charge_window_start
+      - trigger: state
+        entity_id: input_datetime.pv_charge_window_end
+    condition:
+      - condition: state
+        entity_id: binary_sensor.ev_connected
+        state: "on"
+      - condition: state
+        entity_id: binary_sensor.pv_charge_window_active
+        state: "on"
+    action:
+      - variables:
+          pv_power: "{{ states('sensor.pv_power_watts') | float(0) }}"
+          current_amps: "{{ states('number.ev_charger_current_amps') | float(0) }}"
+          last_change: "{{ state_attr('input_datetime.pv_last_step_change', 'timestamp') | float(0) }}"
+          time_since_change: "{{ (now().timestamp() - last_change) / 60 }}"
+
+          target_step: >
+            {%- if pv_power >= 3000 -%}
+              5
+            {%- elif pv_power >= 2500 -%}
+              4
+            {%- elif pv_power >= 1500 -%}
+              3
+            {%- elif pv_power >= 1000 -%}
+              2
+            {%- else -%}
+              1
+            {%- endif %}
+
+          target_amps: >
+            {%- if pv_power >= 3000 -%}
+              15
+            {%- elif pv_power >= 2500 -%}
+              10
+            {%- elif pv_power >= 1500 -%}
+              8
+            {%- elif pv_power >= 1000 -%}
+              6
+            {%- else -%}
+              0
+            {%- endif %}
+
+          is_stepping_up: "{{ target_amps > current_amps }}"
+          is_stepping_down: "{{ target_amps < current_amps }}"
+          min_time_up: 3
+          min_time_down: 2
+          can_change_up: "{{ is_stepping_up and time_since_change >= min_time_up }}"
+          can_change_down: "{{ is_stepping_down and time_since_change >= min_time_down }}"
+          should_change: "{{ target_amps == current_amps or can_change_up or can_change_down }}"
+
+      - if: "{{ should_change and target_amps != current_amps }}"
+        then:
+          - service: number.set_value
+            target:
+              entity_id: number.ev_charger_current_amps
+            data:
+              value: "{{ target_amps }}"
+
+          - service: input_datetime.set_datetime
+            target:
+              entity_id: input_datetime.pv_last_step_change
+            data:
+              datetime: "{{ now().isoformat() }}"
+
+          - service: input_text.set_value
+            target:
+              entity_id: input_text.pv_current_step
+            data:
+              value: "{{ target_step }}"
+
+  - alias: "PV Charge Controller - Force Stop Outside Window"
+    id: pv_ev_charger_stop_outside_window
+    description: "Set charging to 0 amps when outside the allowed time window"
+    mode: single
+    trigger:
+      - trigger: state
+        entity_id: binary_sensor.pv_charge_window_active
+        to: "off"
+    action:
+      - service: number.set_value
+        target:
+          entity_id: number.ev_charger_current_amps
+        data:
+          value: 0
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.pv_last_step_change
+        data:
+          datetime: "{{ now().isoformat() }}"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.pv_current_step
+        data:
+          value: "0"
+```
+
+## Example dashboard card
+
+```yaml
+type: entities
+title: PV EV Charge Controller
+entities:
+  - entity: binary_sensor.ev_connected
+    name: EV Connected
+  - entity: binary_sensor.pv_charge_window_active
+    name: Charging Window Active
+  - entity: input_datetime.pv_charge_window_start
+    name: Window Start Time
+  - entity: input_datetime.pv_charge_window_end
+    name: Window End Time
+  - entity: sensor.pv_power_watts
+    name: Solar Power
+  - entity: number.ev_charger_current_amps
+    name: Charge Current
+  - entity: input_text.pv_current_step
+    name: Current Step
+```
+
+## Time window defaults
+
+This package is configured for:
+- Start: 10:05
+- End: 16:55
+
+The charger will only operate when the current time is within this range and solar production meets the configured thresholds.
+
+---
+
+This configuration gives you a practical time-windowed PV charging setup for Home Assistant.
