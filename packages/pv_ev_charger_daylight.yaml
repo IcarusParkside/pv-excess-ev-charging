@@ -140,6 +140,11 @@ input_text:
 
 template:
   - binary_sensor:
+      - name: EV Connected
+        unique_id: ev_connected
+        state: >
+          {{ states('sensor.ev_ac_charging_control_box_status') | lower in ['connect', 'charing', 'finish'] }}
+
       - name: PV Charging Allowed
         unique_id: pv_charging_allowed
         state: >
