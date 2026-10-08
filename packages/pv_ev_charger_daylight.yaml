@@ -143,9 +143,9 @@ template:
       - name: PV Charging Allowed
         unique_id: pv_charging_allowed
         state: >
-          {{ states('sensor.pv_power_watts') | float(0) >= states('input_number.pv_step_1_threshold_watts') | float(0) }}
+          {{ states('sensor.sma_ac_power') | float(0) >= states('input_number.pv_step_1_threshold_watts') | float(0) }}
         availability: >
-          {{ states('sensor.pv_power_watts') not in ['unknown', 'unavailable', 'none'] }}
+          {{ states('sensor.sma_ac_power') not in ['unknown', 'unavailable', 'none'] }}
 
       - name: PV Daylight Active
         unique_id: pv_daylight_active
@@ -163,7 +163,7 @@ automation:
     trigger:
       - platform: state
         entity_id:
-          - sensor.pv_power_watts
+          - sensor.sma_ac_power
           - binary_sensor.ev_connected
           - sun.sun
       - platform: state
@@ -190,7 +190,7 @@ automation:
         state: "on"
     action:
       - variables:
-          pv_power: "{{ states('sensor.pv_power_watts') | float(0) }}"
+          pv_power: "{{ states('sensor.sma_ac_power') | float(0) }}"
           current_amps: "{{ states('number.ev_charger_current_amps') | float(0) }}"
           step_1_threshold: "{{ states('input_number.pv_step_1_threshold_watts') | float(0) }}"
           step_2_threshold: "{{ states('input_number.pv_step_2_threshold_watts') | float(0) }}"
@@ -286,63 +286,6 @@ automation:
           entity_id: input_text.pv_current_step
         data:
           value: "0"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
