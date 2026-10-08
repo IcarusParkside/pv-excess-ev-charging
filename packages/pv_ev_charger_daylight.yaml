@@ -6,6 +6,7 @@
 # - step up after 3 minutes
 # - step down after 2 minutes
 # - only charge when sun elevation > 0 degrees (or between sunrise/sunset)
+# - optional time-window restriction: charge only between configured start/end times
 
 input_number:
   pv_step_1_threshold_watts:
@@ -132,6 +133,16 @@ input_datetime:
     has_date: true
     has_time: true
 
+  pv_charge_window_start:
+    name: PV Charge Window Start
+    has_date: false
+    has_time: true
+
+  pv_charge_window_end:
+    name: PV Charge Window End
+    has_date: false
+    has_time: true
+
 input_text:
   pv_current_step:
     name: PV Current Step
@@ -160,6 +171,20 @@ template:
         availability: >
           {{ state_attr('sun.sun', 'elevation') is not none }}
 
+      - name: PV Charge Window Active
+        unique_id: pv_charge_window_active
+        state: >
+          {% set start = states('input_datetime.pv_charge_window_start') %}
+          {% set end = states('input_datetime.pv_charge_window_end') %}
+          {% set now_hm = now().strftime('%H:%M') %}
+          {% if start in ['unknown', 'unavailable', 'none', ''] or end in ['unknown', 'unavailable', 'none', ''] %}
+            {{ false }}
+          {% elif start <= end %}
+            {{ start <= now_hm and now_hm <= end }}
+          {% else %}
+            {{ now_hm >= start or now_hm <= end }}
+          {% endif %}
+
 automation:
   - alias: PV EV Charger - Control Current by Solar (Daylight Only)
     id: pv_ev_charger_control_daylight
@@ -171,6 +196,7 @@ automation:
           - sensor.sma_ac_power
           - binary_sensor.ev_connected
           - sun.sun
+          - binary_sensor.pv_charge_window_active
       - platform: state
         entity_id:
           - input_number.pv_step_1_threshold_watts
@@ -186,12 +212,17 @@ automation:
           - input_number.pv_step_up_delay_minutes
           - input_number.pv_step_down_delay_minutes
           - input_number.pv_daylight_min_elevation
+          - input_datetime.pv_charge_window_start
+          - input_datetime.pv_charge_window_end
     condition:
       - condition: state
         entity_id: binary_sensor.ev_connected
         state: "on"
       - condition: state
         entity_id: binary_sensor.pv_daylight_active
+        state: "on"
+      - condition: state
+        entity_id: binary_sensor.pv_charge_window_active
         state: "on"
     action:
       - variables:
@@ -275,6 +306,35 @@ automation:
       - platform: state
         entity_id: binary_sensor.pv_daylight_active
         to: "off"
+    action:
+      - service: number.set_value
+        target:
+          entity_id: number.ev_ac_charging_control_box_current
+        data:
+          value: 0
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.pv_last_step_change
+        data:
+          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.pv_current_step
+        data:
+          value: "0"
+
+  - alias: PV EV Charger - Stop at Charge Window End
+    id: pv_ev_charger_stop_window_end
+    description: Stop EV charging at the end of the configured time window
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.pv_charge_window_active
+        to: "off"
+    condition:
+      - condition: state
+        entity_id: binary_sensor.ev_connected
+        state: "on"
     action:
       - service: number.set_value
         target:
