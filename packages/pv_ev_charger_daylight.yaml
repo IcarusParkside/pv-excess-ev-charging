@@ -1,12 +1,11 @@
 # packages/pv_ev_charger_daylight.yaml
 # Home Assistant package for solar-powered EV charging with stepped current control,
-# time-based hysteresis, and daylight-only charging restriction.
+# time-based hysteresis, and time-window charging restriction.
 #
-# Charging is only allowed during daylight hours, ensuring grid-independent operation.
+# Charging is only allowed during configured time windows.
 # - step up after 3 minutes
 # - step down after 2 minutes
-# - only charge when sun elevation > 0 degrees (or between sunrise/sunset)
-# - optional time-window restriction: charge only between configured start/end times
+# - only charge between configured start/end times
 
 input_number:
   pv_step_1_threshold_watts:
@@ -117,16 +116,6 @@ input_number:
     unit_of_measurement: min
     mode: box
 
-  pv_daylight_min_elevation:
-    name: Minimum Sun Elevation for Charging
-    min: -10
-    max: 30
-    step: 1
-    initial: 0
-    unit_of_measurement: degrees
-    mode: box
-    icon: mdi:sun
-
 input_datetime:
   pv_last_step_change:
     name: PV Last Step Change
@@ -163,14 +152,6 @@ template:
         availability: >
           {{ states('sensor.sma_ac_power') not in ['unknown', 'unavailable', 'none'] }}
 
-      - name: PV Daylight Active
-        unique_id: pv_daylight_active
-        description: Binary sensor indicating if sun is above minimum elevation threshold
-        state: >
-          {{ (state_attr('sun.sun', 'elevation') | float(0)) >= (states('input_number.pv_daylight_min_elevation') | float(0)) }}
-        availability: >
-          {{ state_attr('sun.sun', 'elevation') is not none }}
-
       - name: PV Charge Window Active
         unique_id: pv_charge_window_active
         state: >
@@ -186,16 +167,15 @@ template:
           {% endif %}
 
 automation:
-  - alias: PV EV Charger - Control Current by Solar (Daylight Only)
-    id: pv_ev_charger_control_daylight
-    description: Increase/decrease EV charging current based on PV output during daylight hours with time-based hysteresis
+  - alias: PV EV Charger - Control Current by Solar
+    id: pv_ev_charger_control
+    description: Increase/decrease EV charging current based on PV output with time-based hysteresis
     mode: single
     trigger:
       - platform: state
         entity_id:
           - sensor.sma_ac_power
           - binary_sensor.ev_connected
-          - sun.sun
           - binary_sensor.pv_charge_window_active
       - platform: state
         entity_id:
@@ -211,15 +191,11 @@ automation:
           - input_number.pv_step_5_current_amps
           - input_number.pv_step_up_delay_minutes
           - input_number.pv_step_down_delay_minutes
-          - input_number.pv_daylight_min_elevation
           - input_datetime.pv_charge_window_start
           - input_datetime.pv_charge_window_end
     condition:
       - condition: state
         entity_id: binary_sensor.ev_connected
-        state: "on"
-      - condition: state
-        entity_id: binary_sensor.pv_daylight_active
         state: "on"
       - condition: state
         entity_id: binary_sensor.pv_charge_window_active
@@ -297,31 +273,6 @@ automation:
                 data:
                   value: "{{ target_step }}"
         default: []
-
-  - alias: PV EV Charger - Force Stop at Sunset
-    id: pv_ev_charger_force_stop_sunset
-    description: Force charging to 0 amps when sun goes below minimum elevation
-    mode: single
-    trigger:
-      - platform: state
-        entity_id: binary_sensor.pv_daylight_active
-        to: "off"
-    action:
-      - service: number.set_value
-        target:
-          entity_id: number.ev_ac_charging_control_box_current
-        data:
-          value: 0
-      - service: input_datetime.set_datetime
-        target:
-          entity_id: input_datetime.pv_last_step_change
-        data:
-          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
-      - service: input_text.set_value
-        target:
-          entity_id: input_text.pv_current_step
-        data:
-          value: "0"
 
   - alias: PV EV Charger - Stop at Charge Window End
     id: pv_ev_charger_stop_window_end
