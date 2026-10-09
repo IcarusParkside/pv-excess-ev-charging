@@ -1,0 +1,45 @@
+# packages/plug_action_control.yaml
+# Standalone Home Assistant package: dashboard selector for the charger's
+# PlugAction mode (Tuya DP ID 154). Independent of the PV charging package.
+#
+# PlugAction values (reaction when a vehicle is plugged in):
+#   0: Manual start via cloud or RFID authentication
+#   1: Immediate plug-and-charge
+#   2: Hold in idle indefinitely until scheduled timer expiry
+#
+# REPLACE number.plugaction below with your charger's real PlugAction entity.
+# If it is a select entity instead, use select.select_option with the option
+# text; if it is a Tuya DP service, use that service with value 0/1/2.
+
+input_select:
+  plug_action_mode:
+    name: Plug Action Mode
+    icon: mdi:ev-station
+    options:
+      - Manual start
+      - Plug and charge
+      - Idle until timer expiry
+
+automation:
+  - alias: "PlugAction - Apply selected mode"
+    id: plug_action_apply_selected_mode
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: input_select.plug_action_mode
+    condition:
+      - condition: template
+        value_template: >
+          {{ trigger.to_state is not none
+             and trigger.to_state.state not in ['unknown', 'unavailable']
+             and trigger.from_state is not none
+             and trigger.from_state.state not in ['unknown', 'unavailable'] }}
+    action:
+      - service: number.set_value
+        target:
+          entity_id: number.plugaction  # <-- replace with your PlugAction entity
+        data:
+          value: >
+            {{ {'Manual start': 0,
+                'Plug and charge': 1,
+                'Idle until timer expiry': 2}[states('input_select.plug_action_mode')] }}

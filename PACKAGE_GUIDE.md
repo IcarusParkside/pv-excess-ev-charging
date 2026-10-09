@@ -104,3 +104,37 @@ Key variables:
 ---
 
 This package provides a complete, user-friendly Home Assistant solution for solar-aware EV charging.
+
+## PlugAction Mode Control (separate package)
+
+`packages/plug_action_control.yaml` is independent of the PV charging package. It adds a dashboard selector for the charger's `PlugAction` mode (DP ID 154), which sets what the charger does when a vehicle is plugged in:
+
+| Dashboard option | Value | Behaviour |
+|---|---|---|
+| Manual start | 0 | Start manually via cloud or RFID authentication |
+| Plug and charge | 1 | Start charging immediately on plug-in |
+| Idle until timer expiry | 2 | Stay idle until the scheduled timer expires |
+
+### Installation
+
+1. Copy `plug_action_control.yaml` into your `packages/` directory
+2. Add to `configuration.yaml`:
+
+```yaml
+homeassistant:
+  packages:
+    plug_action_control: !include packages/plug_action_control.yaml
+```
+
+3. In the package, replace `number.plugaction` with your charger's actual PlugAction entity (if it is a `select` entity, use `select.select_option` with the option text instead)
+4. Restart Home Assistant
+
+### Dashboard
+
+```yaml
+type: entities
+title: Charger Plug Action
+entities:
+  - entity: input_select.plug_action_mode
+    name: Plug Action Mode
+```
