@@ -39,11 +39,12 @@ All thresholds and timings can be adjusted in the Home Assistant UI without edit
 ### System Configuration
 - `input_text.pv_solar_power_sensor` - Name of your solar power sensor (default: `sensor.pv_power_watts`)
 - `input_text.pv_charger_current_entity` - Name of your charger current control (default: `number.ev_charger_current_amps`)
+- `input_text.pv_charger_phase_1_current` - Name of your charger phase 1 current sensor (default: `sensor.ev_ac_charging_control_box_current_phase_1`)
 - `input_text.pv_ev_connected_sensor` - Name of your EV connected sensor (default: `binary_sensor.ev_connected`)
 
 ## How to use
 
-1. **Verify entity names**: Check that your solar power, charger current, and EV connected sensors match the defaults. If not, update them in the helpers.
+1. **Verify entity names**: Check that your solar power, charger current, EV connected, and charger phase current sensors match the defaults. If not, update them in the helpers.
 
 2. **Adjust thresholds**: Set the power thresholds to match your solar system size and charger capabilities.
 
@@ -51,7 +52,15 @@ All thresholds and timings can be adjusted in the Home Assistant UI without edit
 
 4. **Fine-tune timing**: Adjust the up/down delay times based on your local weather patterns.
 
-5. **Monitor via dashboard**: Use the provided dashboard card to watch the system in action.
+5. **Enable battery-full stop**: Deploy the automation from `examples/battery-full-stop-automation.yaml` to automatically stop charging when the battery reaches full capacity.
+
+6. **Monitor via dashboard**: Use the provided dashboard card to watch the system in action.
+
+## Battery-Full Stop Automation
+
+If your EV doesn't expose battery SOC data, use the battery-full stop automation to automatically halt charging when the charger's current draw drops to zero for 1 minute. This indicates the battery is fully charged.
+
+Copy the automation from `examples/battery-full-stop-automation.yaml` to your Home Assistant configuration. It monitors `sensor.ev_ac_charging_control_box_current_phase_1` and stops the charger when charging completes.
 
 ## Dashboard Card
 
@@ -69,6 +78,8 @@ entities:
     name: Current Step
   - entity_id: binary_sensor.ev_connected
     name: EV Connected
+  - entity_id: sensor.ev_ac_charging_control_box_current_phase_1
+    name: Charger Phase 1 Current
   - entity_id: input_datetime.pv_last_step_change
     name: Last Step Change
 ```
@@ -91,6 +102,11 @@ entities:
 - Adjust `input_number.pv_step_up_delay_minutes` and `input_number.pv_step_down_delay_minutes`
 - Check the logs for automation trigger timestamps
 
+**Battery-full stop automation not working:**
+- Verify `input_text.pv_charger_phase_1_current` is correctly set to your charger's phase 1 current sensor
+- Check that the sensor is reporting 0 A when charging completes
+- Ensure `input_boolean.pv_charge_safety_override` is in the "off" state (otherwise automations are disabled)
+
 ## Advanced: Modifying the automation logic
 
 If you need to change the automation behavior beyond tunable values, edit the `pv_ev_charger.yaml` file directly. The main automation is `alias: "PV EV Charger - Control by Solar Power"`.
@@ -101,6 +117,8 @@ Key variables:
 - `time_since_change`: Minutes elapsed since last step change
 - `should_change`: Boolean indicating if a step change should occur
 
+For the battery-full stop automation, the key trigger is the phase 1 current sensor dropping to 0 A and remaining there for 1 minute.
+
 ---
 
-This package provides a complete, user-friendly Home Assistant solution for solar-aware EV charging.
+This package provides a complete, user-friendly Home Assistant solution for solar-aware EV charging with automatic battery-full detection.
