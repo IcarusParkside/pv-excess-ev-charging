@@ -1,0 +1,25 @@
+# Separate package: charger PlugAction mode selector (independent of PV charging automation).
+# Replace number.plugaction with your charger integration's real entity/service if different.
+input_select:
+  plug_action_mode:
+    name: Plug Action Mode
+    options:
+      - Manual start
+      - Plug and charge
+      - Idle until timer expiry
+    icon: mdi:ev-station
+
+automation:
+  - alias: "PlugAction - Apply selected mode"
+    id: plug_action_apply_selected_mode
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: input_select.plug_action_mode
+    action:
+      - service: number.set_value
+        target:
+          entity_id: number.plugaction
+        data:
+          value: >
+            {{ {'Manual start': 0, 'Plug and charge': 1, 'Idle until timer expiry': 2}[trigger.to_state.state] }}

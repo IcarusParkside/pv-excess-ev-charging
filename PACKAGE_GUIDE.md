@@ -104,3 +104,7 @@ Key variables:
 ---
 
 This package provides a complete, user-friendly Home Assistant solution for solar-aware EV charging.
+
+## Related package: PlugAction mode control
+
+A separate, independent package (`packages/plug_action_control.yaml`) provides a dashboard selector for the charger's `PlugAction` mode (0 = Manual start, 1 = Plug-and-charge, 2 = Idle until timer expiry). It does not affect the PV charging behavior. See the "PlugAction mode package" section in `README.md` for installation, dashboard example, and notes on substituting your charger's entity/service name.

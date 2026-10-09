@@ -305,6 +305,46 @@ entities:
     name: Last Step Change
 ```
 
+## PlugAction mode package (separate, optional)
+
+`packages/plug_action_control.yaml` is a separate package in this repository. It is independent of the PV excess charging automation and can be installed on its own. It lets you choose the charger's `PlugAction` mode (e.g. Tuya DP ID 154) from a dashboard selector. It controls what the charger does when a vehicle is plugged in; it is not a stop-charging command.
+
+### Mode mapping
+
+| Selector option          | Value | Behavior                                  |
+|--------------------------|-------|-------------------------------------------|
+| Manual start             | 0     | Manual start via cloud or RFID            |
+| Plug and charge          | 1     | Charge immediately on plug-in             |
+| Idle until timer expiry  | 2     | Stay idle until the scheduled timer expires |
+
+### Installation
+
+1. Copy `packages/plug_action_control.yaml` into your Home Assistant `packages/` directory
+2. Include it from `configuration.yaml`:
+
+```yaml
+homeassistant:
+  packages:
+    plug_action_control: !include packages/plug_action_control.yaml
+```
+
+3. Restart Home Assistant
+
+### Dashboard example
+
+```yaml
+type: entities
+title: Charger Plug Action
+entities:
+  - entity: input_select.plug_action_mode
+    name: Plug Action Mode
+```
+
+### Notes
+
+- The package writes the mapped value to `number.plugaction`. The exact entity/service name varies by charger integration; substitute your own (e.g. `select.select_option` for a `select` entity, using its option names instead of numbers).
+- If your integration does not expose `PlugAction` as a writable entity, expose it first (e.g. via the Tuya/local integration).
+
 ## Recommended next steps
 
 1. Identify your charger's current control entity in Home Assistant
