@@ -1,0 +1,31 @@
+template:
+  - binary_sensor:
+      - name: EV Charger Active
+        unique_id: ev_charger_active
+        state: "{{ states('sensor.ev_ac_charging_control_box_current_phase_1') | float(0) > 0.5 }}"
+        # If Phase 1 current is <0.5A, charging has stopped (battery likely full)
+
+automation:
+  - alias: "PV Charge Controller - Stop when charging current ceases"
+    id: pv_ev_charger_stop_when_idle
+    description: "Stop charger after current draw stops (battery likely full)"
+    mode: single
+    trigger:
+      - trigger: state
+        entity_id: sensor.ev_ac_charging_control_box_current_phase_1
+        to: "0"
+        for: "00:01:00"  # Wait 1 minute to confirm
+    condition:
+      - condition: state
+        entity_id: input_boolean.pv_charge_safety_override
+        state: "off"
+    action:
+      - service: switch.turn_off
+        target:
+          entity_id: switch.ev_charger_stop_charging
+      
+      - service: number.set_value
+        target:
+          entity_id: number.ev_charger_current_amps
+        data:
+          value: 0
