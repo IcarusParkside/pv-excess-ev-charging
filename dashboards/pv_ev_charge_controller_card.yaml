@@ -1,0 +1,15 @@
+type: entities
+title: PV EV Charge Controller
+entities:
+  - entity_id: sensor.pv_power_watts
+    name: Solar Power
+  - entity_id: number.ev_charger_current_amps
+    name: Charge Current
+  - entity_id: input_text.pv_current_step
+    name: Current Step
+  - entity_id: binary_sensor.ev_connected
+    name: EV Connected
+  - entity_id: sensor.ev_ac_charging_control_box_current_phase_1
+    name: Charger Phase 1 Current
+  - entity_id: input_datetime.pv_last_step_change
+    name: Last Step Change

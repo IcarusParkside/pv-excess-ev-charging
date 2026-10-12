@@ -1,0 +1,5 @@
+homeassistant:
+  packages:
+    pv_ev_charger_helpers: !include packages/pv_ev_charger/helpers.yaml
+    pv_ev_charger_templates: !include packages/pv_ev_charger/templates.yaml
+    pv_ev_charger_automations: !include packages/pv_ev_charger/automations.yaml

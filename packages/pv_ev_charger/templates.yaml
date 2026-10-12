@@ -1,0 +1,33 @@
+template:
+  - sensor:
+      - name: PV Solar Power
+        unique_id: pv_solar_power
+        unit_of_measurement: W
+        state: >-
+          {% set ent = states('input_text.pv_solar_power_sensor') %}
+          {% if ent in ['unknown', 'unavailable', ''] %}
+            unknown
+          {% else %}
+            {{ states(ent) | float(0) }}
+          {% endif %}
+
+      - name: PV Target Charge Current
+        unique_id: pv_target_charge_current
+        unit_of_measurement: A
+        state: >-
+          {% set solar = states('sensor.pv_solar_power') | float(0) %}
+          {% set t1 = states('input_number.pv_step_1_threshold') | float(0) %}
+          {% set t2 = states('input_number.pv_step_2_threshold') | float(0) %}
+          {% set t3 = states('input_number.pv_step_3_threshold') | float(0) %}
+          {% set t4 = states('input_number.pv_step_4_threshold') | float(0) %}
+          {% if solar >= t4 %}
+            {{ states('input_number.pv_step_4_current') | float(0) }}
+          {% elif solar >= t3 %}
+            {{ states('input_number.pv_step_3_current') | float(0) }}
+          {% elif solar >= t2 %}
+            {{ states('input_number.pv_step_2_current') | float(0) }}
+          {% elif solar >= t1 %}
+            {{ states('input_number.pv_step_1_current') | float(0) }}
+          {% else %}
+            0
+          {% endif %}

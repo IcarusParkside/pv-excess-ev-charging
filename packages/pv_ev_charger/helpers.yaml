@@ -1,0 +1,122 @@
+input_number:
+  pv_step_1_threshold:
+    name: PV Step 1 Threshold
+    min: 0
+    max: 10000
+    step: 50
+    unit_of_measurement: W
+    mode: box
+    initial: 1000
+
+  pv_step_2_threshold:
+    name: PV Step 2 Threshold
+    min: 0
+    max: 10000
+    step: 50
+    unit_of_measurement: W
+    mode: box
+    initial: 1500
+
+  pv_step_3_threshold:
+    name: PV Step 3 Threshold
+    min: 0
+    max: 10000
+    step: 50
+    unit_of_measurement: W
+    mode: box
+    initial: 2500
+
+  pv_step_4_threshold:
+    name: PV Step 4 Threshold
+    min: 0
+    max: 10000
+    step: 50
+    unit_of_measurement: W
+    mode: box
+    initial: 3000
+
+  pv_step_1_current:
+    name: PV Step 1 Current
+    min: 0
+    max: 32
+    step: 1
+    unit_of_measurement: A
+    mode: box
+    initial: 6
+
+  pv_step_2_current:
+    name: PV Step 2 Current
+    min: 0
+    max: 32
+    step: 1
+    unit_of_measurement: A
+    mode: box
+    initial: 8
+
+  pv_step_3_current:
+    name: PV Step 3 Current
+    min: 0
+    max: 32
+    step: 1
+    unit_of_measurement: A
+    mode: box
+    initial: 10
+
+  pv_step_4_current:
+    name: PV Step 4 Current
+    min: 0
+    max: 32
+    step: 1
+    unit_of_measurement: A
+    mode: box
+    initial: 15
+
+  pv_step_up_delay_minutes:
+    name: PV Step Up Delay Minutes
+    min: 0
+    max: 30
+    step: 1
+    unit_of_measurement: min
+    mode: box
+    initial: 3
+
+  pv_step_down_delay_minutes:
+    name: PV Step Down Delay Minutes
+    min: 0
+    max: 30
+    step: 1
+    unit_of_measurement: min
+    mode: box
+    initial: 2
+
+input_text:
+  pv_solar_power_sensor:
+    name: PV Solar Power Sensor
+    initial: sensor.pv_power_watts
+
+  pv_charger_current_entity:
+    name: PV Charger Current Entity
+    initial: number.ev_charger_current_amps
+
+  pv_charger_phase_1_current:
+    name: PV Charger Phase 1 Current
+    initial: sensor.ev_ac_charging_control_box_current_phase_1
+
+  pv_ev_connected_sensor:
+    name: PV EV Connected Sensor
+    initial: binary_sensor.ev_connected
+
+  pv_current_step:
+    name: PV Current Step
+    initial: idle
+
+input_datetime:
+  pv_last_step_change:
+    name: PV Last Step Change
+    has_date: true
+    has_time: true
+
+input_boolean:
+  pv_charge_safety_override:
+    name: PV Charge Safety Override
+    initial: false
