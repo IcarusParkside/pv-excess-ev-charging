@@ -6,7 +6,7 @@ input_number:
     step: 50
     unit_of_measurement: W
     mode: box
-    initial: 1000
+    initial: 1500
 
   pv_step_2_threshold:
     name: PV Step 2 Threshold
@@ -15,7 +15,7 @@ input_number:
     step: 50
     unit_of_measurement: W
     mode: box
-    initial: 1500
+    initial: 2000
 
   pv_step_3_threshold:
     name: PV Step 3 Threshold
@@ -115,6 +115,18 @@ input_datetime:
     name: PV Last Step Change
     has_date: true
     has_time: true
+
+  pv_charge_window_start:
+    name: PV Charge Window Start
+    has_date: false
+    has_time: true
+    initial: "09:00:00"
+
+  pv_charge_window_end:
+    name: PV Charge Window End
+    has_date: false
+    has_time: true
+    initial: "16:00:00"
 
 input_boolean:
   pv_charge_safety_override:

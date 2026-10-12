@@ -1,11 +1,17 @@
 automation:
   - alias: PV EV Charger - Update Current Step
     id: pv_ev_charger_update_current_step
+    description: >-
+      Step the charger current up/down with hysteresis, but only while the
+      charge window is active. Drops to 0 A below the first threshold and
+      resumes if solar recovers within the window. Outside the window this
+      automation does nothing, so the charger is released for manual use.
     mode: restart
     trigger:
       - platform: state
         entity_id:
           - sensor.pv_target_charge_current
+          - binary_sensor.pv_charge_window_active
           - input_number.pv_step_1_current
           - input_number.pv_step_2_current
           - input_number.pv_step_3_current
@@ -22,6 +28,9 @@ automation:
       - condition: state
         entity_id: input_boolean.pv_charge_safety_override
         state: "off"
+      - condition: state
+        entity_id: binary_sensor.pv_charge_window_active
+        state: "on"
       - condition: template
         value_template: >-
           {% set ev_entity = states('input_text.pv_ev_connected_sensor') %}
@@ -72,7 +81,7 @@ automation:
                 target:
                   entity_id: input_datetime.pv_last_step_change
                 data:
-                  datetime: "{{ now().isoformat() }}"
+                  datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
 
           - conditions:
               - condition: template
@@ -99,4 +108,4 @@ automation:
                 target:
                   entity_id: input_datetime.pv_last_step_change
                 data:
-                  datetime: "{{ now().isoformat() }}"
+                  datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"

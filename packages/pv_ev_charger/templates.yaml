@@ -31,3 +31,18 @@ template:
           {% else %}
             0
           {% endif %}
+
+  - binary_sensor:
+      - name: PV Charge Window Active
+        unique_id: pv_charge_window_active
+        state: >-
+          {% set start = states('input_datetime.pv_charge_window_start') %}
+          {% set end = states('input_datetime.pv_charge_window_end') %}
+          {% set now_t = now().strftime('%H:%M:%S') %}
+          {% if start in ['unknown', 'unavailable', 'none', ''] or end in ['unknown', 'unavailable', 'none', ''] %}
+            {{ false }}
+          {% elif start <= end %}
+            {{ start <= now_t and now_t < end }}
+          {% else %}
+            {{ now_t >= start or now_t < end }}
+          {% endif %}
