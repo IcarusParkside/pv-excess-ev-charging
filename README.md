@@ -20,7 +20,7 @@ Instead of toggling the charger on and off at fixed thresholds, this system maps
 
 This system uses these fixed stepped levels with time-based hysteresis:
 
-- 0–1499 W solar → 0 A (no charging)
+- 0–1499 W solar → minimum 6 A (current is always clamped to 6–15 A)
 - 1500–1999 W solar → 6 A
 - 2000–2499 W solar → 8 A
 - 2500–2999 W solar → 10 A
@@ -28,6 +28,7 @@ This system uses these fixed stepped levels with time-based hysteresis:
 - 3500+ W solar → 15 A (maximum)
 
 Hysteresis is time-based:
+- At the start of each charge window, stepping waits until PV reaches 1750 W
 - Upgrade to next step after 3 minutes at higher threshold
 - Downgrade to lower step after 2 minutes at lower threshold
 
