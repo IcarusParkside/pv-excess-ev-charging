@@ -6,6 +6,8 @@
 # - step up after 3 minutes
 # - step down after 2 minutes
 # - only charge between configured start/end times
+# - charging current is always clamped to 6-15 A
+# - at the start of each window, stepping waits until PV power reaches 1750 W
 
 input_number:
   pv_step_1_threshold_watts:
@@ -55,7 +57,7 @@ input_number:
 
   pv_step_1_current_amps:
     name: PV Step 1 Current
-    min: 0
+    min: 6
     max: 15
     step: 1
     initial: 6
@@ -64,7 +66,7 @@ input_number:
 
   pv_step_2_current_amps:
     name: PV Step 2 Current
-    min: 0
+    min: 6
     max: 15
     step: 1
     initial: 8
@@ -73,7 +75,7 @@ input_number:
 
   pv_step_3_current_amps:
     name: PV Step 3 Current
-    min: 0
+    min: 6
     max: 15
     step: 1
     initial: 10
@@ -82,7 +84,7 @@ input_number:
 
   pv_step_4_current_amps:
     name: PV Step 4 Current
-    min: 0
+    min: 6
     max: 15
     step: 1
     initial: 13
@@ -91,7 +93,7 @@ input_number:
 
   pv_step_5_current_amps:
     name: PV Step 5 Current
-    min: 0
+    min: 6
     max: 15
     step: 1
     initial: 15
@@ -115,6 +117,10 @@ input_number:
     initial: 2
     unit_of_measurement: min
     mode: box
+
+input_boolean:
+    name: PV Window Start Threshold Reached
+    initial: false
 
 input_datetime:
   pv_last_step_change:
@@ -201,6 +207,21 @@ automation:
         entity_id: binary_sensor.pv_charge_window_active
         state: "on"
     action:
+      - if:
+          - condition: state
+            entity_id: input_boolean.pv_window_start_reached
+            state: "off"
+          - condition: numeric_state
+            entity_id: sensor.sma_ac_power
+            above: 1749.999
+        then:
+          - service: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.pv_window_start_reached
+      - condition: template
+        value_template: >
+          {{ is_state('input_boolean.pv_window_start_reached', 'on')
+             or states('sensor.sma_ac_power') | float(0) >= 1750 }}
       - variables:
           pv_power: "{{ states('sensor.sma_ac_power') | float(0) }}"
           current_amps: "{{ states('number.ev_ac_charging_control_box_current') | float(0) }}"
@@ -221,7 +242,7 @@ automation:
             {{ as_timestamp(raw) if raw not in ['unknown', 'unavailable', 'none', ''] else 0 }}
           elapsed_minutes: >
             {{ ((as_timestamp(now()) - last_change_epoch) / 60) | float(0) }}
-          target_current: >
+          raw_target_current: >
             {% if pv_power >= step_5_threshold %}
               {{ step_5_current }}
             {% elif pv_power >= step_4_threshold %}
@@ -235,6 +256,7 @@ automation:
             {% else %}
               0
             {% endif %}
+          target_current: "{{ [6, [15, raw_target_current | float(0)] | min] | max }}"
           target_step: >
             {% if pv_power >= step_5_threshold %}
               5
@@ -261,7 +283,7 @@ automation:
                 target:
                   entity_id: number.ev_ac_charging_control_box_current
                 data:
-                  value: "{{ target_current }}"
+                  value: "{{ [6, [15, target_current | float(6)] | min] | max }}"
               - service: input_datetime.set_datetime
                 target:
                   entity_id: input_datetime.pv_last_step_change
@@ -273,6 +295,18 @@ automation:
                 data:
                   value: "{{ target_step }}"
         default: []
+
+  - alias: PV EV Charger - Reset Window Start Gate
+    id: pv_ev_charger_reset_window_gate
+    description: Re-arm the 1750 W start threshold whenever the charge window opens or closes
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.pv_charge_window_active
+    action:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.pv_window_start_reached
 
   - alias: PV EV Charger - Stop at Charge Window End
     id: pv_ev_charger_stop_window_end
