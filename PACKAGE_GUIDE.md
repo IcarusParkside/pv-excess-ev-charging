@@ -2,7 +2,7 @@
 
 This is a multi-file Home Assistant automation package for solar-aware EV charging with time-based hysteresis, a configurable daily charge window, and fully user-tunable values.
 
-**The package only ever sets the charger between 6 A and 15 A. It never sets the current to 0 A.**
+**The package only ever sets the charger between 6 A and 15 A. It uses 6 A, 8 A, 10 A, 13 A and 15 A only.**
 
 The automation only controls the charger **inside the charge window**. Outside the window it does nothing, so the charger is released for manual use.
 
@@ -25,7 +25,7 @@ config/
 | File | Purpose |
 |------|---------|
 | `packages/pv_ev_charger/helpers.yaml` | All user-tunable helpers, entity-name settings, charge window times, state helpers and the safety override |
-| `packages/pv_ev_charger/templates.yaml` | `sensor.pv_solar_power`, `sensor.pv_target_charge_current` (clamped 6-15 A) and `binary_sensor.pv_charge_window_active` |
+| `packages/pv_ev_charger/templates.yaml` | `sensor.pv_solar_power`, `sensor.pv_target_charge_current` (6, 8, 10, 13, 15 A only) and `binary_sensor.pv_charge_window_active` |
 | `packages/pv_ev_charger/automations.yaml` | `PV EV Charger - Update Current Step` (only acts inside the charge window) |
 | `packages/examples/battery-full-stop-automation.yaml` | Disabled placeholder. Contains no automations. Safe to delete |
 | `dashboards/pv_ev_charge_controller_card.yaml` | Entities card to monitor the system |
@@ -63,8 +63,8 @@ The package never writes 0 A. If solar drops below the step 1 threshold, the cha
 All thresholds, timings and the charge window can be adjusted in the Home Assistant UI without editing YAML.
 
 ### Power Thresholds (Watts)
-- `input_number.pv_step_1_threshold` - Power at which step 1 applies. Below this the charger stays at the 6 A minimum (default: 1500 W)
-- `input_number.pv_step_2_threshold` - Step 2 threshold (default: 2000 W)
+- `input_number.pv_step_1_threshold` - Power at which step 1 applies. Below this the charger stays at the 6 A minimum (default: 1000 W)
+- `input_number.pv_step_2_threshold` - Step 2 threshold (default: 1500 W)
 - `input_number.pv_step_3_threshold` - Step 3 threshold (default: 2500 W)
 - `input_number.pv_step_4_threshold` - Step 4 threshold (default: 3000 W)
 
@@ -74,7 +74,8 @@ Keep the thresholds in ascending order (step 1 < step 2 < step 3 < step 4).
 - `input_number.pv_step_1_current` - Current at step 1 (default: 6 A)
 - `input_number.pv_step_2_current` - Current at step 2 (default: 8 A)
 - `input_number.pv_step_3_current` - Current at step 3 (default: 10 A)
-- `input_number.pv_step_4_current` - Current at step 4 (default: 15 A)
+- `input_number.pv_step_4_current` - Current at step 4 (default: 13 A)
+- `input_number.pv_step_5_current` - Current at step 5 (default: 15 A)
 
 ### Hysteresis Timing (Minutes)
 - `input_number.pv_step_up_delay_minutes` - Time to wait before stepping up (default: 3 min)
@@ -100,7 +101,7 @@ Windows that cross midnight are supported (for example start 22:00, end 06:00).
 ## How it works
 
 1. `sensor.pv_solar_power` reads the sensor named in `input_text.pv_solar_power_sensor`.
-2. `sensor.pv_target_charge_current` maps solar power to a charge current using the step thresholds, always within 6-15 A (below step 1 = 6 A).
+2. `sensor.pv_target_charge_current` maps solar power to a charge current using the step thresholds, always within 6-15 A.
 3. `binary_sensor.pv_charge_window_active` is `on` between the configured window start and end times.
 4. The `PV EV Charger - Update Current Step` automation runs when the target, window state, thresholds, currents or delays change. It only acts if the safety override is off, the charge window is active and the EV connected sensor is `on`.
 5. It **steps up** only if the target is higher than the current setting and at least `pv_step_up_delay_minutes` have passed since the last change. It **steps down** only if the target is lower and at least `pv_step_down_delay_minutes` have passed.

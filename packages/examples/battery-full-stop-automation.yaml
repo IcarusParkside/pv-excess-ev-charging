@@ -1,8 +1,8 @@
 # REMOVED / DISABLED
 #
 # The battery-full stop example used to live here. It set the charger current
-# to 0 A, which this package must never do (the package only operates between
-# 6 A and 15 A). The automation has been removed.
+# to 0 A, which this package must never do. The package now operates with
+# 6 A, 8 A, 10 A, 13 A and 15 A only.
 #
 # This file contains no automations and must NOT be included in
 # configuration.yaml. It can be deleted from the repository.
