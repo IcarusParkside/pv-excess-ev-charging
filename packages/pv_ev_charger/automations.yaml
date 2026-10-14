@@ -3,8 +3,11 @@ automation:
     id: pv_ev_charger_update_current_step
     description: >-
       Step the charger current up/down with hysteresis, but only while the
-      charge window is active. Drops to 0 A below the first threshold and
-      resumes if solar recovers within the window. Outside the window this
+      charge window is active. Falls back to the 6 A minimum below the first threshold and
+      resumes if solar recovers within the window. The written current is
+      always clamped to 6-15 A. At the start of each window nothing is set
+      until PV power reaches the start threshold (default 1750 W); after that
+      the normal steps apply. Outside the window this
       automation does nothing, so the charger is released for manual use.
     mode: restart
     trigger:
@@ -24,6 +27,7 @@ automation:
           - input_number.pv_step_down_delay_minutes
           - input_text.pv_ev_connected_sensor
           - input_boolean.pv_charge_safety_override
+          - input_boolean.pv_start_threshold_reached
     condition:
       - condition: state
         entity_id: input_boolean.pv_charge_safety_override
@@ -31,13 +35,20 @@ automation:
       - condition: state
         entity_id: binary_sensor.pv_charge_window_active
         state: "on"
+      - condition: state
+        entity_id: input_boolean.pv_start_threshold_reached
+        state: "on"
       - condition: template
         value_template: >-
           {% set ev_entity = states('input_text.pv_ev_connected_sensor') %}
           {{ ev_entity not in ['unknown', 'unavailable', ''] and states(ev_entity) == 'on' }}
     action:
       - variables:
-          target_current: "{{ states('sensor.pv_target_charge_current') | float(0) }}"
+          min_current: "{{ [states('input_number.pv_min_charge_current') | float(6), 6] | max }}"
+          max_current: "{{ [states('input_number.pv_max_charge_current') | float(15), 15] | min }}"
+          target_current: >-
+            {{ [[states('sensor.pv_target_charge_current') | float(0), min_current | float(6)] | max,
+                max_current | float(15)] | min }}
           charger_entity: "{{ states('input_text.pv_charger_current_entity') }}"
           current_current: "{{ states(charger_entity) | float(0) }}"
           last_change_raw: "{{ states('input_datetime.pv_last_step_change') }}"
@@ -109,3 +120,39 @@ automation:
                   entity_id: input_datetime.pv_last_step_change
                 data:
                   datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+
+  - alias: PV EV Charger - Start Threshold Gate
+    id: pv_ev_charger_start_threshold_gate
+    description: >-
+      Latch the start gate once PV power reaches the start threshold (default
+      1750 W) inside the charge window; clear it when the window is inactive so
+      the wait repeats at the start of every window.
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id:
+          - sensor.pv_solar_power
+          - binary_sensor.pv_charge_window_active
+          - input_number.pv_start_threshold
+    action:
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: binary_sensor.pv_charge_window_active
+                state: "on"
+              - condition: template
+                value_template: >-
+                  {{ states('sensor.pv_solar_power') | float(0)
+                     >= states('input_number.pv_start_threshold') | float(1750) }}
+            sequence:
+              - service: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.pv_start_threshold_reached
+          - conditions:
+              - condition: state
+                entity_id: binary_sensor.pv_charge_window_active
+                state: "off"
+            sequence:
+              - service: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.pv_start_threshold_reached

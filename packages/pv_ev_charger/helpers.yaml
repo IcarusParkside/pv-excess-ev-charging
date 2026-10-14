@@ -37,8 +37,8 @@ input_number:
 
   pv_step_1_current:
     name: PV Step 1 Current
-    min: 0
-    max: 32
+    min: 6
+    max: 15
     step: 1
     unit_of_measurement: A
     mode: box
@@ -46,8 +46,8 @@ input_number:
 
   pv_step_2_current:
     name: PV Step 2 Current
-    min: 0
-    max: 32
+    min: 6
+    max: 15
     step: 1
     unit_of_measurement: A
     mode: box
@@ -55,8 +55,8 @@ input_number:
 
   pv_step_3_current:
     name: PV Step 3 Current
-    min: 0
-    max: 32
+    min: 6
+    max: 15
     step: 1
     unit_of_measurement: A
     mode: box
@@ -64,12 +64,39 @@ input_number:
 
   pv_step_4_current:
     name: PV Step 4 Current
-    min: 0
-    max: 32
+    min: 6
+    max: 15
     step: 1
     unit_of_measurement: A
     mode: box
     initial: 15
+
+  pv_min_charge_current:
+    name: PV Min Charge Current
+    min: 6
+    max: 15
+    step: 1
+    unit_of_measurement: A
+    mode: box
+    initial: 6
+
+  pv_max_charge_current:
+    name: PV Max Charge Current
+    min: 6
+    max: 15
+    step: 1
+    unit_of_measurement: A
+    mode: box
+    initial: 15
+
+  pv_start_threshold:
+    name: PV Window Start Threshold
+    min: 0
+    max: 10000
+    step: 50
+    unit_of_measurement: W
+    mode: box
+    initial: 1750
 
   pv_step_up_delay_minutes:
     name: PV Step Up Delay Minutes
@@ -131,4 +158,8 @@ input_datetime:
 input_boolean:
   pv_charge_safety_override:
     name: PV Charge Safety Override
+    initial: false
+
+  pv_start_threshold_reached:
+    name: PV Start Threshold Reached
     initial: false
