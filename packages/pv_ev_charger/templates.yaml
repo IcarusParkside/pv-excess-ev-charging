@@ -11,6 +11,8 @@ template:
             {{ states(ent) | float(0) }}
           {% endif %}
 
+      # Target current is ALWAYS clamped to 6-15 A. It never returns 0.
+      # Below the step 1 threshold the target is the 6 A minimum.
       - name: PV Target Charge Current
         unique_id: pv_target_charge_current
         unit_of_measurement: A
@@ -21,16 +23,17 @@ template:
           {% set t3 = states('input_number.pv_step_3_threshold') | float(0) %}
           {% set t4 = states('input_number.pv_step_4_threshold') | float(0) %}
           {% if solar >= t4 %}
-            {{ states('input_number.pv_step_4_current') | float(0) }}
+            {% set raw = states('input_number.pv_step_4_current') | float(15) %}
           {% elif solar >= t3 %}
-            {{ states('input_number.pv_step_3_current') | float(0) }}
+            {% set raw = states('input_number.pv_step_3_current') | float(10) %}
           {% elif solar >= t2 %}
-            {{ states('input_number.pv_step_2_current') | float(0) }}
+            {% set raw = states('input_number.pv_step_2_current') | float(8) %}
           {% elif solar >= t1 %}
-            {{ states('input_number.pv_step_1_current') | float(0) }}
+            {% set raw = states('input_number.pv_step_1_current') | float(6) %}
           {% else %}
-            0
+            {% set raw = 6 %}
           {% endif %}
+          {{ [6, [raw, 15] | min] | max }}
 
   - binary_sensor:
       - name: PV Charge Window Active

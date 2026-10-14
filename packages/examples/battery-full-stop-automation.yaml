@@ -1,30 +1,8 @@
-automation:
-  - alias: PV EV Battery Full Stop
-    id: pv_ev_battery_full_stop_example
-    mode: single
-    trigger:
-      - platform: numeric_state
-        entity_id: sensor.ev_ac_charging_control_box_current_phase_1
-        below: 0.1
-        for:
-          minutes: 1
-    condition:
-      - condition: state
-        entity_id: input_boolean.pv_charge_safety_override
-        state: "off"
-    action:
-      - service: number.set_value
-        target:
-          entity_id: number.ev_charger_current_amps
-        data:
-          value: 0
-      - service: input_text.set_value
-        target:
-          entity_id: input_text.pv_current_step
-        data:
-          value: idle
-      - service: input_datetime.set_datetime
-        target:
-          entity_id: input_datetime.pv_last_step_change
-        data:
-          datetime: "{{ now().isoformat() }}"
+# REMOVED / DISABLED
+#
+# The battery-full stop example used to live here. It set the charger current
+# to 0 A, which this package must never do (the package only operates between
+# 6 A and 15 A). The automation has been removed.
+#
+# This file contains no automations and must NOT be included in
+# configuration.yaml. It can be deleted from the repository.

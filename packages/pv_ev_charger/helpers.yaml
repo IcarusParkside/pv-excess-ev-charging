@@ -37,8 +37,8 @@ input_number:
 
   pv_step_1_current:
     name: PV Step 1 Current
-    min: 0
-    max: 32
+    min: 6
+    max: 15
     step: 1
     unit_of_measurement: A
     mode: box
@@ -46,8 +46,8 @@ input_number:
 
   pv_step_2_current:
     name: PV Step 2 Current
-    min: 0
-    max: 32
+    min: 6
+    max: 15
     step: 1
     unit_of_measurement: A
     mode: box
@@ -55,8 +55,8 @@ input_number:
 
   pv_step_3_current:
     name: PV Step 3 Current
-    min: 0
-    max: 32
+    min: 6
+    max: 15
     step: 1
     unit_of_measurement: A
     mode: box
@@ -64,8 +64,8 @@ input_number:
 
   pv_step_4_current:
     name: PV Step 4 Current
-    min: 0
-    max: 32
+    min: 6
+    max: 15
     step: 1
     unit_of_measurement: A
     mode: box

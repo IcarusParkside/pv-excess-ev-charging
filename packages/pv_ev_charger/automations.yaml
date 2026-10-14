@@ -2,10 +2,10 @@ automation:
   - alias: PV EV Charger - Update Current Step
     id: pv_ev_charger_update_current_step
     description: >-
-      Step the charger current up/down with hysteresis, but only while the
-      charge window is active. Drops to 0 A below the first threshold and
-      resumes if solar recovers within the window. Outside the window this
-      automation does nothing, so the charger is released for manual use.
+      Step the charger current up/down between 6 A and 15 A with hysteresis,
+      only while the charge window is active. It never sets the current below
+      6 A. Outside the window this automation does nothing, so the charger is
+      released for manual use.
     mode: restart
     trigger:
       - platform: state
@@ -37,7 +37,9 @@ automation:
           {{ ev_entity not in ['unknown', 'unavailable', ''] and states(ev_entity) == 'on' }}
     action:
       - variables:
-          target_current: "{{ states('sensor.pv_target_charge_current') | float(0) }}"
+          # Hard clamp to 6-15 A so 0 A can never be written to the charger.
+          target_current: >-
+            {{ [6, [states('sensor.pv_target_charge_current') | float(6), 15] | min] | max }}
           charger_entity: "{{ states('input_text.pv_charger_current_entity') }}"
           current_current: "{{ states(charger_entity) | float(0) }}"
           last_change_raw: "{{ states('input_datetime.pv_last_step_change') }}"
@@ -66,17 +68,12 @@ automation:
                 target:
                   entity_id: "{{ charger_entity }}"
                 data:
-                  value: "{{ target_current | float(0) }}"
+                  value: "{{ target_current | float(6) }}"
               - service: input_text.set_value
                 target:
                   entity_id: input_text.pv_current_step
                 data:
-                  value: >-
-                    {% if target_current | float(0) == 0 %}
-                      idle
-                    {% else %}
-                      step_{{ target_current | float(0) | int }}
-                    {% endif %}
+                  value: "step_{{ target_current | float(6) | int }}"
               - service: input_datetime.set_datetime
                 target:
                   entity_id: input_datetime.pv_last_step_change
@@ -93,17 +90,12 @@ automation:
                 target:
                   entity_id: "{{ charger_entity }}"
                 data:
-                  value: "{{ target_current | float(0) }}"
+                  value: "{{ target_current | float(6) }}"
               - service: input_text.set_value
                 target:
                   entity_id: input_text.pv_current_step
                 data:
-                  value: >-
-                    {% if target_current | float(0) == 0 %}
-                      idle
-                    {% else %}
-                      step_{{ target_current | float(0) | int }}
-                    {% endif %}
+                  value: "step_{{ target_current | float(6) | int }}"
               - service: input_datetime.set_datetime
                 target:
                   entity_id: input_datetime.pv_last_step_change
